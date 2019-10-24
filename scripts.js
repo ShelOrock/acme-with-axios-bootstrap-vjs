@@ -1,32 +1,43 @@
 
-// const getData = url => {
-//   return axios.get(url).then(response => response.data);
-// };
+const getData = url => axios
+  .get(url).then(response => {
+    return {
+      data: response.data,
+      extension: response.request.responseURL.split('api/')[1]
+    }
+  });
 
-const products = axios
-  .get('https://acme-users-api-rev.herokuapp.com/api/products')
-  .then(response => response.data);
-const companies = axios
-  .get('https://acme-users-api-rev.herokuapp.com/api/companies')
-  .then(response => response.data);
-console.log(window.location);
+const products = getData('https://acme-users-api-rev.herokuapp.com/api/products')
+const companies = getData('https://acme-users-api-rev.herokuapp.com/api/companies')
+
+// console.log(window.location);
 
 Promise.all([products, companies]).then(response => {
-  const [products, companies] = response;
   const table = document.querySelector('#container');
   const mainNav = document.querySelector('#main-nav');
-  //   render(products, body);
+
   renderNav(response, mainNav);
-  renderTable(companies, table);
+
+  mainNav.addEventListener('click', ev => {
+    ev.preventDefault();
+    if(ev.target.tagName === 'A') {
+      ev.target.classList.add('active')
+      console.log(ev.target.classList);
+      renderTable(response[ev.target.id], table);
+    }
+  });
+
+  renderTable(response[0], table);
 });
 
-const renderTable = (data, container) => {
+const renderTable = (dataArr, container) => {
   //<table class='table table-striped'> </table>
   const html = `
-    
+        <h2>${dataArr.extension[0].toUpperCase() + dataArr.extension.slice(1)}</h2>
+        ${`
         <thead>
-        <tr>
-                ${Object.keys(data[0])
+            <tr>
+                ${Object.keys(dataArr.data[0])
                   .map(
                     key =>
                       `<th scope='col'> ${key[0].toUpperCase() +
@@ -36,7 +47,7 @@ const renderTable = (data, container) => {
             </tr>
         </thead>
         <tbody>
-        ${data
+        ${dataArr.data
           .map(obj => {
             return `<tr>
                 ${Object.values(obj)
@@ -47,15 +58,16 @@ const renderTable = (data, container) => {
             </tr>`;
           })
           .join('')}
-        </tbody>`;
+        </tbody>`
+      }`
   container.innerHTML = html;
 };
 
-const renderNav = (data, container) => {
-  const html = data
-    .map(arr => {
+const renderNav = (dataArr, container) => {
+  const html = dataArr
+    .map((arr, idx) => {
       return `<li class="nav-item">
-     <a class="nav-link active" href="#${2 + 2}">(${arr.length})</a>
+     <a id='${idx}' class="nav-link" href="#${arr.extension}">${arr.extension[0].toUpperCase() + arr.extension.slice(1)} (${arr.data.length})</a>
      </li>`;
     })
     .join('');
